@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typography Glyph Anatomy Flashcard Trainer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-scene { perspective: 1000px; }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
+      transform-style: preserve-3d;
+    }
+    .card-inner.flipped { transform: rotateY(180deg); }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-back { transform: rotateY(180deg); }
+    .mastery-0 { background-color: #fee2e2; color: #991b1b; }
+    .mastery-1 { background-color: #fef9c3; color: #854d0e; }
+    .mastery-2 { background-color: #dcfce7; color: #166534; }
+    .mastery-3 { background-color: #dbeafe; color: #1e40af; }
+  </style>
+</head>
+<body class="bg-gray-950 min-h-screen text-gray-100 flex flex-col">
+  <header class="bg-gray-900 border-b border-gray-800 px-4 py-4">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Typography Glyph Anatomy</h1>
+        <p class="text-gray-400 text-sm">Spaced-repetition flashcard trainer</p>
+      </div>
+      <button id="shuffleBtn" aria-label="Shuffle cards"
+        class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-3 py-2 rounded-lg text-sm transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6"/>
+        </svg>
+        Shuffle
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
+    <!-- Progress Bar -->
+    <div>
+      <div class="flex justify-between text-sm text-gray-400 mb-1">
+        <span id="cardCounter" aria-live="polite">Card 1 of 25</span>
+        <span id="masteryLabel">Mastery: 0 / 25</span>
+      </div>
+      <div class="w-full bg-gray-800 rounded-full h-3" role="progressbar" aria-label="Overall mastery progress" aria-valuemin="0" aria-valuemax="25" id="progressBar" aria-valuenow="0">
+        <div id="progressFill" class="h-3 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-500" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="card-scene flex-1 min-h-64" style="height:300px;" aria-label="Flashcard">
+      <div class="card-inner w-full h-full" id="cardInner" role="button" tabindex="0" aria-label="Click to flip card">
+        <!-- Front -->
+        <div class="card-face bg-gray-900 border border-gray-700 rounded-2xl flex flex-col items-center justify-center p-8 cursor-pointer hover:border-gray-500 transition-colors">
+          <p class="text-xs uppercase tracking-widest text-gray-500 mb-4">Term</p>
+          <p id="termText" class="text-4xl font-semibold text-white text-center tracking-wide"></p>
+          <p class="text-gray-500 text-sm mt-6">Click to reveal definition</p>
+        </div>
+        <!-- Back -->
+        <div class="card-face card-back bg-gray-900 border border-indigo-800 rounded-2xl flex flex-col items-center justify-center p-8 cursor-pointer overflow-y-auto">
+          <p class="text-xs uppercase tracking-widest text-indigo-400 mb-3">Definition</p>
+          <p id="defText" class="text-lg text-gray-100 text-center leading-relaxed mb-4"></p>
+          <p id="exampleText" class="text-sm text-indigo-300 text-center italic"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confidence Buttons (shown when flipped) -->
+    <div id="confidencePanel" class="hidden flex-col gap-3" aria-label="Rate your confidence">
+      <p class="text-center text-sm text-gray-400">How well did you know this?</p>
+      <div class="grid grid-cols-3 gap-3">
+        <button id="btnAgain" aria-label="Rate: Again (didn't know)"
+          class="bg-red-900 hover:bg-red-800 border border-red-700 text-red-200 rounded-xl py-3 font-semibold transition-colors">
+          Again
+          <div class="text-xs font-normal text-red-400 mt-0.5">Didn't know</div>
+        </button>
+        <button id="btnGood" aria-label="Rate: Good (roughly knew it)"
+          class="bg-yellow-900 hover:bg-yellow-800 border border-yellow-700 text-yellow-200 rounded-xl py-3 font-semibold transition-colors">
+          Good
+          <div class="text-xs font-normal text-yellow-400 mt-0.5">Roughly knew</div>
+        </button>
+        <button id="btnEasy" aria-label="Rate: Easy (knew it well)"
+          class="bg-emerald-900 hover:bg-emerald-800 border border-emerald-700 text-emerald-200 rounded-xl py-3 font-semibold transition-colors">
+          Easy
+          <div class="text-xs font-normal text-emerald-400 mt-0.5">Knew it well</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mastery Grid -->
+    <section aria-label="Card mastery overview">
+      <h2 class="text-sm uppercase tracking-widest text-gray-500 mb-3">Card Mastery</h2>
+      <div id="masteryGrid" class="grid grid-cols-5 gap-2"></div>
+      <div class="flex gap-4 mt-3 text-xs text-gray-500 flex-wrap">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-900 border border-red-700 inline-block"></span>Not seen</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-yellow-900 border border-yellow-700 inline-block"></span>Learning</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-900 border border-emerald-700 inline-block"></span>Good</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-900 border border-blue-700 inline-block"></span>Mastered</span>
+      </div>
+    </section>
+
+    <!-- Reset -->
+    <div class="text-center">
+      <button id="resetBtn" class="text-gray-600 hover:text-gray-400 text-sm transition-colors underline underline-offset-2">
+        Reset all progress
+      </button>
+    </div>
+  </main>
+
+  <script>
+    const CARDS = [
+      { term: "Serif", def: "Small decorative strokes or feet added to the ends of letterform strokes.", example: "Appears in: Times New Roman, Georgia — the horizontal foot of the 'n'" },
+      { term: "Sans-serif", def: "Letterforms without serifs; clean, unadorned stroke endings.", example: "Appears in: Helvetica, Arial — the stroke end of 'a'" },
+      { term: "Ascender", def: "The portion of a lowercase letter that rises above the x-height.", example: "Appears in: lowercase 'b', 'd', 'h', 'k', 'l'" },
+      { term: "Descender", def: "The portion of a lowercase letter that extends below the baseline.", example: "Appears in: lowercase 'g', 'j', 'p', 'q', 'y'" },
+      { term: "X-height", def: "The height of lowercase letters, measured from the baseline to the top of non-ascending letters.", example: "Measured on: lowercase 'x', 'a', 'e', 'o'" },
+      { term: "Cap Height", def: "The height of capital letters measured from baseline to the top of flat capitals.", example: "Measured on: uppercase 'H', 'E', 'I'" },
+      { term: "Baseline", def: "The invisible line upon which most letters sit; descenders fall below it.", example: "Reference line for: all capital letters and most lowercase letters" },
+      { term: "Mean Line", def: "The imaginary line that marks the top of lowercase letters without ascenders; same as x-height line.", example: "Top of: lowercase 'a', 'c', 'e', 'm', 'n'" },
+      { term: "Kerning", def: "The adjustment of space between specific pairs of letters to improve visual balance.", example: "Classic pair: 'AV', 'To', 'WA' — space reduced for optical balance" },
+      { term: "Tracking", def: "Uniform letter-spacing adjustment applied to a range of characters or an entire word/line.", example: "Used in: ALL CAPS HEADLINES to improve readability" },
+      { term: "Leading", def: "The vertical space between lines of type, measured from baseline to baseline.", example: "A body text at 12pt with 14pt leading has 2pt of added space between lines" },
+      { term: "Ligature", def: "A single glyph formed by combining two or more letters to avoid awkward spacing.", example: "Appears in: 'fi', 'fl', 'ff', 'ffi', 'ffl' combinations" },
+      { term: "Counter", def: "The partially or fully enclosed space within a letterform.", example: "Found inside: 'o', 'p', 'b', 'd', lowercase 'a', 'g'" },
+      { term: "Bowl", def: "The fully closed, curved stroke that encloses a counter.", example: "Found in: uppercase 'B', 'D', lowercase 'b', 'd', 'p', 'q'" },
+      { term: "Arm", def: "A horizontal or diagonal stroke that branches from a stem and does not connect at one end.", example: "Found in: uppercase 'E', 'F', 'K', 'L', 'T', 'Y'" },
+      { term: "Leg", def: "A short, descending stroke on the lower portion of certain letters.", example: "Found in: uppercase 'K', 'R', lowercase 'k'" },
+      { term: "Stem", def: "The main vertical or diagonal stroke of a letterform.", example: "The vertical strokes of: 'H', 'I', 'n', 'm', 'd', 'b'" },
+      { term: "Crossbar", def: "A horizontal stroke connecting two stems within a letterform.", example: "Found in: uppercase 'H', 'A', lowercase 't', 'f'" },
+      { term: "Bar", def: "A horizontal stroke on letters like 'e', distinct from crossbar which connects two stems.", example: "Found in: lowercase 'e', 'f', and sometimes uppercase 'Z'" },
+      { term: "Ear", def: "A small stroke projecting from the top of the bowl, often on the lowercase 'g'.", example: "Most prominent in: lowercase 'g', and sometimes 'r'" },
+      { term: "Finial", def: "A tapered or curved end to a stroke, not a serif; often found on letters in italic or script typefaces.", example: "Found at stroke ends of: 'a', 'c', 'e', 'f', 'j', 'r' in many serif typefaces" },
+      { term: "Tail", def: "A descending stroke, often decorative, appearing on certain letters.", example: "Found in: uppercase 'Q', lowercase 'g', 'j', 'y'" },
+      { term: "Spine", def: "The main curved stroke of the uppercase and lowercase 'S'.", example: "The central diagonal curve of: 'S' and 's'" },
+      { term: "Terminal", def: "The end of any stroke that does not include a serif; can be ball, teardrop, or sheared.", example: "Found at ends of: 'a', 'c', 'f', 'r', 's' — the shape varies by typeface" },
+      { term: "Stress Axis", def: "The angle of the thin part of a curved stroke; indicates the calligraphic origin of the typeface.", example: "Visible in: 'O' — the axis of minimum stroke width. Oblique in old-style, vertical in modern serifs" }
+    ];
+
+    const STORAGE_KEY = 'typo-flashcard-v1';
+    let state = { order: [], mastery: {}, currentIndex: 0, isFlipped: false };
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          state.order = parsed.order || [];
+          state.mastery = parsed.mastery || {};
+          state.currentIndex = parsed.currentIndex || 0;
+        }
+      } catch(e) {}
+      if (!state.order.length) {
+        state.order = CARDS.map((_, i) => i);
+        state.mastery = {};
+        CARDS.forEach((_, i) => { state.mastery[i] = 0; });
+        state.currentIndex = 0;
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          order: state.order,
+          mastery: state.mastery,
+          currentIndex: state.currentIndex
+        }));
+      } catch(e) {}
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function getMasteredCount() {
+      return Object.values(state.mastery).filter(v => v >= 3).length;
+    }
+
+    function masteryClass(level) {
+      if (level === 0) return 'bg-red-900 border-red-700 text-red-300';
+      if (level === 1) return 'bg-yellow-900 border-yellow-700 text-yellow-300';
+      if (level === 2) return 'bg-emerald-900 border-emerald-700 text-emerald-300';
+      return 'bg-blue-900 border-blue-700 text-blue-300';
+    }
+
+    function renderMasteryGrid() {
+      const grid = document.getElementById('masteryGrid');
+      grid.innerHTML = '';
+      CARDS.forEach((card, i) => {
+        const level = state.mastery[i] || 0;
+        const btn = document.createElement('button');
+        btn.className = `border rounded-lg p-1.5 text-xs font-medium truncate transition-colors ${masteryClass(level)}`;
+        btn.textContent = card.term.length > 8 ? card.term.slice(0, 7) + '…' : card.term;
+        btn.title = card.term;
+        btn.setAttribute('aria-label', `${card.term}: mastery level ${level}`);
+        btn.addEventListener('click', () => {
+          const idx = state.order.indexOf(i);
+          if (idx !== -1) {
+            state.currentIndex = idx;
+            state.isFlipped = false;
+            saveState();
+            render();
+          }
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function render() {
+      const cardIdx = state.order[state.currentIndex];
+      const card = CARDS[cardIdx];
+      const total = state.order.length;
+      const mastered = getMasteredCount();
+
+      document.getElementById('termText').textContent = card.term;
+      document.getElementById('defText').textContent = card.def;
+      document.getElementById('exampleText').textContent = card.example;
+      document.getElementById('cardCounter').textContent = `Card ${state.currentIndex + 1} of ${total}`;
+      document.getElementById('masteryLabel').textContent = `Mastery: ${mastered} / ${CARDS.length}`;
+
+      const pct = (mastered / CARDS.length) * 100;
+      const fill = document.getElementById('progressFill');
+      fill.style.width = pct + '%';
+      document.getElementById('progressBar').setAttribute('aria-valuenow', mastered);
+
+      const inner = document.getElementById('cardInner');
+      if (state.isFlipped) {
+        inner.classList.add('flipped');
+        document.getElementById('confidencePanel').classList.remove('hidden');
+        document.getElementById('confidencePanel').classList.add('flex');
+      } else {
+        inner.classList.remove('flipped');
+        document.getElementById('confidencePanel').classList.add('hidden');
+        document.getElementById('confidencePanel').classList.remove('flex');
+      }
+
+      renderMasteryGrid();
+    }
+
+    function flip() {
+      state.isFlipped = !state.isFlipped;
+      render();
+    }
+
+    function rate(score) {
+      const cardIdx = state.order[state.currentIndex];
+      const current = state.mastery[cardIdx] || 0;
+      if (score === 0) {
+        state.mastery[cardIdx] = Math.max(0, current - 1);
+      } else if (score === 1) {
+        state.mastery[cardIdx] = Math.min(3, current + 1);
+      } else {
+        state.mastery[cardIdx] = 3;
+      }
+      state.isFlipped = false;
+      state.currentIndex = (state.currentIndex + 1) % state.order.length;
+      saveState();
+      render();
+    }
+
+    document.getElementById('cardInner').addEventListener('click', flip);
+    document.getElementById('cardInner').addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+    });
+    document.getElementById('btnAgain').addEventListener('click', () => rate(0));
+    document.getElementById('btnGood').addEventListener('click', () => rate(1));
+    document.getElementById('btnEasy').addEventListener('click', () => rate(2));
+    document.getElementById('shuffleBtn').addEventListener('click', () => {
+      state.order = shuffle(state.order);
+      state.currentIndex = 0;
+      state.isFlipped = false;
+      saveState();
+      render();
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      if (confirm('Reset all progress?')) {
+        try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+        state.order = CARDS.map((_, i) => i);
+        state.mastery = {};
+        CARDS.forEach((_, i) => { state.mastery[i] = 0; });
+        state.currentIndex = 0;
+        state.isFlipped = false;
+        render();
+      }
+    });
+
+    loadState();
+    render();
+  </script>
+</body>
+</html>
